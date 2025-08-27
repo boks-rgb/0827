@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>💎 보석마을 탐험대</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: "Pretendard", sans-serif;
+      background: #e8f8f7;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    .map-container {
+      position: relative;
+      height: 100px;
+      background: url('https://via.placeholder.com/800x100?text=🌳+→+🌊+→+⛰️+→+💎') no-repeat center center;
+      background-size: contain;
+      margin-bottom: 10px;
+    }
+    .character-icon {
+      position: absolute;
+      top: 60px;
+      font-size: 32px;
+      transition: left 0.5s ease;
+    }
+    .question-box {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto 30px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    textarea {
+      width: 90%;
+      height: 120px;
+      padding: 10px;
+      font-size: 16px;
+      border: 2px solid #20b2aa;
+      border-radius: 8px;
+      resize: none;
+      display: block;
+      margin: 0 auto;
+    }
+    .buttons {
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
+      background: #20b2aa;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .feedback {
+      font-weight: bold;
+      margin-top: 15px;
+      color: #008000;
+    }
+    .timer {
+      font-size: 18px;
+      margin: 10px;
+    }
+    .gems {
+      margin-top: 20px;
+    }
+    .gem {
+      font-size: 24px;
+      margin: 2px;
+      display: inline-block;
+    }
+    .gem.special {
+      font-size: 32px;
+      color: #1e90ff;
+    }
+    .character-select {
+      margin-bottom: 20px;
+    }
+    .character-select button {
+      font-size: 24px;
+    }
+    .summary {
+      font-size: 18px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1>💎 보석마을 탐험대 <span id="selectedCharacter">🐱</span></h1>
+
+    <div class="map-container">
+      <div class="character-icon" id="movingCharacter" style="left: 0%">🐱</div>
+    </div>
+
+    <div class="character-select" id="characterSelect">
+      <p>탐험할 캐릭터를 골라 주세요!</p>
+      <button onclick="selectCharacter('🐰')">🐰</button>
+      <button onclick="selectCharacter('🐱')">🐱</button>
+      <button onclick="selectCharacter('🦖')">🦖</button>
+    </div>
+
+    <div class="question-box" id="questionBox" style="display: none;">
+      <h2>❓ 질문 <span id="questionNum">1</span> / 20</h2>
+      <p id="questionText">질문이 여기에 표시됩니다.</p>
+      <textarea id="answerInput" placeholder="마음속 생각을 차분히 써 주세요~ ✨"></textarea>
+      <div class="feedback" id="feedback" style="display: none;"></div>
+      <div class="timer" id="timer">⏱️ 20초</div>
+      <div class="buttons">
+        <button onclick="prevQuestion()">이전</button>
+        <button onclick="nextQuestion()">다음</button>
+      </div>
+    </div>
+
+    <div class="gems" id="gems"></div>
+
+    <div class="summary" id="summary" style="display: none;">
+      <h2>🎉 탐험 완료!</h2>
+      <p>20개의 질문을 모두 답했어요. 멋진 보석이 모였네요!</p>
+      <button onclick="window.print()">🖨️ 저장/인쇄</button>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      "민이는 왜 이름 스티커를 많이 붙이게 되었나요?",
+      "민이가 처음에 어떤 기분이었는지 이야기해 보세요.",
+      "동굴 속 보석 그림 안에서 민이가 만난 괴물은 어떤 모습이었나요?",
+      "민이가 세 명의 클로버를 처음 본 장면을 떠올려보세요. 어떤 일이 있었나요?",
+      "민이는 어떤 말들을 들으면서 힘을 얻었나요?",
+      "민이가 슬퍼했던 이유는 무엇이라고 생각하나요?",
+      "누군가가 나에게 상처 주는 말을 했을 때, 너는 어떻게 느꼈니?",
+      "민이가 용기를 낸 모습이 있었다면 무엇이라고 생각하나요?",
+      "너도 '보석' 같은 마음을 가지고 있다고 생각하니? 어떤 보석이 있을까?",
+      "사람들에게 이름 스티커를 붙이면 안 되는 이유는 무엇일까요?",
+      "동굴 속 보석들이 특별했던 이유는 무엇이었을까요?",
+      "마음의 눈을 뜰 수 있으려면 어떤 생각을 해야 할까요?",
+      "너의 ‘보석동굴’ 안에는 어떤 보석들이 숨어 있을까요?",
+      "누군가를 위로해준 적이 있나요? 어떻게 말했나요?",
+      "사랑해, 괜찮아, 고마워' 말은 왜 소중할까요?",
+      "내가 오늘 깨우고 싶은 보석 3가지를 골라보세요.",
+      "작은 나와 큰 나는 어떻게 다를까요?",
+      "나는 어떤 상황에서 나의 보석(용기, 배려 등)을 잘 쓰는 것 같나요?",
+      "앞으로 나는 어떻게 ‘큰 나’를 키워갈 수 있을까요?",
+      "정말 따뜻한 말에는, 다른 친구들도 힘을 얻었을까요?"
+    ];
+
+    const feedbackList = [
+      "정성껏 써주셔서 감사해요!",
+      "감정이 잘 담겼어요.",
+      "좋은 표현이에요! 당신의 보석 같은 답변이에요.",
+      "이야기를 잘 풀어냈네요.",
+      "멋진 생각이에요. 다른 친구들도 힘을 얻겠어요."
+    ];
+
+    let current = 0;
+    let answers = Array(20).fill("");
+    let selected = "🐱";
+    let timer = 20;
+    let timerInterval;
+
+    function selectCharacter(char) {
+      selected = char;
+      document.getElementById("selectedCharacter").textContent = char;
+      document.getElementById("movingCharacter").textContent = char;
+      document.getElementById("characterSelect").style.display = "none";
+      document.getElementById("questionBox").style.display = "block";
+      showQuestion();
+      startTimer();
+    }
+
+    function showQuestion() {
+      document.getElementById("questionNum").textContent = current + 1;
+      document.getElementById("questionText").textContent = questions[current];
+      document.getElementById("answerInput").value = answers[current];
+      document.getElementById("feedback").style.display = "none";
+      updateMapPosition();
+      resetTimer();
+    }
+
+    function nextQuestion() {
+      const input = document.getElementById("answerInput").value.trim();
+      if (input !== "") {
+        answers[current] = input;
+        showFeedback();
+        addGem();
+      }
+      if (current < questions.length - 1) {
+        current++;
+        showQuestion();
+      } else {
+        endExploration();
+      }
+    }
+
+    function prevQuestion() {
+      if (current > 0) {
+        current--;
+        showQuestion();
+      }
+    }
+
+    function showFeedback() {
+      const feedback = feedbackList[Math.floor(Math.random() * feedbackList.length)];
+      document.getElementById("feedback").textContent = "💬 " + feedback;
+      document.getElementById("feedback").style.display = "block";
+    }
+
+    function addGem() {
+      const gem = document.createElement("span");
+      gem.textContent = "💎";
+      gem.classList.add("gem");
+      if ([4, 14, 19].includes(current)) {
+        gem.classList.add("special");
+      }
+      document.getElementById("gems").appendChild(gem);
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timer = 20;
+      document.getElementById("timer").textContent = `⏱️ ${timer}초`;
+      timerInterval = setInterval(() => {
+        timer--;
+        document.getElementById("timer").textContent = `⏱️ ${timer}초`;
+        if (timer === 0) clearInterval(timerInterval);
+      }, 1000);
+    }
+
+    function updateMapPosition() {
+      const moving = document.getElementById("movingCharacter");
+      const percent = (current / (questions.length - 1)) * 100;
+      moving.style.left = `${percent}%`;
+    }
+
+    function endExploration() {
+      document.getElementById("questionBox").style.display = "none";
+      document.getElementById("summary").style.display = "block";
+    }
+  </script>
+</body>
+</html>
